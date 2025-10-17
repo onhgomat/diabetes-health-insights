@@ -1,72 +1,85 @@
-# Diabetes Prediction Project
+# diabetes_analysis.py
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+from sklearn.metrics import accuracy_score, classification_report
 
-# -------- Step 1: Load Dataset --------
+# Step 1: Load the dataset (make sure 'diabetes.csv' is in the same folder)
 df = pd.read_csv("diabetes.csv")
-print("✅ Data Loaded Successfully!\n")
+
+# Step 2: View first few rows
+print("First 5 rows of data:")
 print(df.head())
 
-# -------- Step 2: Basic Info --------
-print("\n📊 Dataset Info:")
+# Step 3: Basic info
+print("\nData Info:")
 print(df.info())
-print("\nMissing values:\n", df.isnull().sum())
 
-# -------- Step 3: Data Summary --------
-print("\n📈 Statistical Summary:")
+# Step 4: Summary statistics
+print("\nSummary statistics:")
 print(df.describe())
 
-# -------- Step 4: Correlation Heatmap --------
-plt.figure(figsize=(10,6))
-plt.imshow(df.corr(), cmap='coolwarm', interpolation='nearest')
-plt.title("Correlation Heatmap")
-plt.colorbar()
+# Step 5: Check missing values
+print("\nMissing values in each column:")
+print(df.isnull().sum())
+
+# Step 6: Correlation matrix
+print("\nCorrelation Matrix:")
+print(df.corr())
+
+# Step 7: Visualization
+plt.figure(figsize=(12,5))
+
+plt.subplot(1, 2, 1)
+plt.hist(df['Glucose'], bins=20, color='skyblue', edgecolor='black')
+plt.title('Glucose Distribution')
+plt.xlabel('Glucose Level')
+plt.ylabel('Count')
+
+plt.subplot(1, 2, 2)
+plt.scatter(df[df['Outcome']==0]['Age'], df[df['Outcome']==0]['Glucose'], color='green', label='No Diabetes')
+plt.scatter(df[df['Outcome']==1]['Age'], df[df['Outcome']==1]['Glucose'], color='red', label='Diabetes')
+plt.title('Age vs Glucose')
+plt.xlabel('Age')
+plt.ylabel('Glucose')
+plt.legend()
+
+plt.tight_layout()
 plt.show()
 
-# -------- Step 5: Data Preprocessing --------
+# Step 8: NumPy Analysis
+glucose_mean = np.mean(df['Glucose'])
+glucose_std = np.std(df['Glucose'])
+print(f"\nGlucose Mean: {glucose_mean:.2f}, Standard Deviation: {glucose_std:.2f}")
+
+# Step 9: Machine Learning - Logistic Regression Model
+print("\n--- Machine Learning Model ---")
+
+# Split data
 X = df.drop('Outcome', axis=1)
 y = df['Outcome']
 
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# -------- Step 6: Split Data --------
-X_train, X_test, y_train, y_test = train_test_split(
-    X_scaled, y, test_size=0.2, random_state=42
-)
-
-# -------- Step 7: Train Model --------
-model = LogisticRegression()
+# Train model
+model = LogisticRegression(max_iter=1000)
 model.fit(X_train, y_train)
 
-# -------- Step 8: Predictions --------
+# Predict
 y_pred = model.predict(X_test)
 
-# -------- Step 9: Evaluation --------
-print("\n🎯 Accuracy:", accuracy_score(y_test, y_pred))
-print("\nConfusion Matrix:\n", confusion_matrix(y_test, y_pred))
-print("\nClassification Report:\n", classification_report(y_test, y_pred))
+# Evaluate
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Model Accuracy: {accuracy * 100:.2f}%")
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
 
-# -------- Step 10: Visualization --------
-plt.figure(figsize=(8,5))
-plt.bar(df.columns[:-1], model.coef_[0], color='teal')
-plt.title("Feature Importance (Model Coefficients)")
-plt.xlabel("Features")
-plt.ylabel("Coefficient Value")
-plt.xticks(rotation=45)
-plt.grid(True)
-plt.show()
+# Step 10: Insight
+if accuracy > 0.75:
+    print("\n✅ Great! The model performs well for predicting diabetes risk.")
+else:
+    print("\n⚠️ The model accuracy is moderate — try feature scaling or tuning parameters.")
 
-# -------- Step 11: Simple User Prediction --------
-print("\n--- Test Your Own Data ---")
-input_data = np.array([
-    [6, 148, 72, 35, 0, 33.6, 0.627, 50]  # Example input
-])
-input_scaled = scaler.transform(input_data)
-prediction = model.predict(input_scaled)
-print("Result: ", "Diabetic 🩸" if prediction[0] == 1 else "Non-Diabetic 💪")
